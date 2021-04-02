@@ -1,9 +1,12 @@
-package app
+package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"time"
 
 	"go.temporal.io/sdk/activity"
@@ -49,9 +52,18 @@ func CheckPR(ctx workflow.Context, details CheckDetails) error {
 }
 
 func Test(ctx context.Context, repo, sha string) (string, error) {
-	// fully asnyk
+	// fully asnyk ;)
 	token := base64.StdEncoding.EncodeToString(activity.GetInfo(ctx).TaskToken)
 	fmt.Println("task token is", token)
+
+	var dat = struct {
+		Callback string `json:"callback"`
+	}{Callback: "http://localhost:6007/callback/" + token}
+	body, _ := json.Marshal(dat)
+
+	// Send the request to the leaf work processor
+	// TODO: handle resp and error
+	http.DefaultClient.Post("http://localhost:6008/", "application/json", bytes.NewReader(body))
 
 	// magic return. pass the zero value of your result, and a sentinel error.
 	return "", activity.ErrResultPending
@@ -62,5 +74,6 @@ func diffResults(old, new string) string {
 }
 
 func SetCommitStatus(ctx context.Context, repo, sha, diff string) error {
+	fmt.Println("I set a commit status")
 	return nil
 }
