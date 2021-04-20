@@ -87,8 +87,11 @@ func Test(ctx context.Context, repo, sha string) (string, error) {
 	body, _ := json.Marshal(dat)
 
 	// Send the request to the leaf work processor
-	// TODO: handle resp and error
-	http.DefaultClient.Post("http://localhost:6008/", "application/json", bytes.NewReader(body))
+	resp, err := http.DefaultClient.Post("http://localhost:6008/", "application/json", bytes.NewReader(body))
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close() // just close it really. we don't use it.
 
 	// magic return. pass the zero value of your result, and a sentinel error.
 	return "", activity.ErrResultPending

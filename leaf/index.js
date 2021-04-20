@@ -20,7 +20,7 @@ app.post('/', (req, res) => {
     fetch(cb, {
         method: 'POST',
     }).then(() => console.log('posted a callback'));
-  }, 10000);
+  }, Math.floor(Math.random() * 10000)); // wait up to 10 seconds
 });
 
 app.listen(port, () => {

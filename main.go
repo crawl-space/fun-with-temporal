@@ -132,6 +132,7 @@ func main() {
 	// This worker hosts both Worker and Activity functions
 	w := worker.New(c, PRCheckTaskQueue, worker.Options{})
 	w.RegisterWorkflow(CheckPR)
+
 	w.RegisterActivity(Test)
 	w.RegisterActivity(SetCommitStatus)
 	// Start listening to the Task Queue
