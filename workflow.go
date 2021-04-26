@@ -61,8 +61,12 @@ func CheckPR(ctx workflow.Context, details CheckDetails) (*Response, error) {
 	}
 
 	// fast to do and deterministic. run inside the workflow.
+	var diff string
 	resp.Status = append([]ResponseStatus{{State: "diffing", TimeStamp: workflow.Now(ctx), Description: "test results are diffing"}}, resp.Status...)
-	diff := diffResults(oldRes, newRes)
+	err := workflow.ExecuteActivity(ctx, DiffResults, oldRes, newRes).Get(ctx, &diff)
+	if err != nil {
+		return nil, err
+	}
 
 	// Resolve the final task and finish.
 	resp.Status = append([]ResponseStatus{{State: "reporting", TimeStamp: workflow.Now(ctx), Description: "PR check results are being posted"}}, resp.Status...)
@@ -97,8 +101,21 @@ func Test(ctx context.Context, repo, sha string) (string, error) {
 	return "", activity.ErrResultPending
 }
 
-func diffResults(old, new string) string {
-	return "new bad code added. :( :( :("
+func DiffResults(old, new string) (string, error) {
+	var dat = struct {
+		Old string `json:"old"`
+		New string `json:"new"`
+	}{Old: old, New: new}
+	body, _ := json.Marshal(dat)
+
+	resp, err := http.DefaultClient.Post("http://localhost:6008/diff", "application/json", bytes.NewReader(body))
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	// for more fun read the response body
+	return "new bad code added. :( :( :(", nil
 }
 
 func SetCommitStatus(ctx context.Context, repo, sha, diff string) error {

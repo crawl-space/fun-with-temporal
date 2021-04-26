@@ -134,6 +134,7 @@ func main() {
 	w.RegisterWorkflow(CheckPR)
 
 	w.RegisterActivity(Test)
+	w.RegisterActivity(DiffResults)
 	w.RegisterActivity(SetCommitStatus)
 	// Start listening to the Task Queue
 	err = w.Run(worker.InterruptCh())
