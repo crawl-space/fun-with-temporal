@@ -1,0 +1,98 @@
+services:
+
+  workflow:
+    container_name: workflow
+    image: fun-with-temporal/workflow
+    build: ./workflow
+    depends_on:
+      - temporal
+      - leaf
+    networks:
+      - default
+      - temporal-network
+    ports:
+      - 6007:6007
+
+  leaf:
+    container_name: leaf
+    image: fun-with-temporal/leaf
+    build: ./leaf
+    ports:
+     - 6008:6008
+
+  #########################################################################################
+  # Temporal itself, and the web interface
+  #########################################################################################
+  temporal:
+    container_name: temporal
+    depends_on:
+      - cassandra
+      - elasticsearch
+    environment:
+      - CASSANDRA_SEEDS=cassandra
+      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development_es.yaml
+      - ENABLE_ES=true
+      - ES_SEEDS=elasticsearch
+      - ES_VERSION=v7
+    image: temporalio/auto-setup:1.8.1
+    networks:
+      - temporal-network
+    ports:
+      - 7233:7233
+    volumes:
+      - ./dynamicconfig:/etc/temporal/config/dynamicconfig
+
+  temporal-web:
+    container_name: temporal-web
+    depends_on:
+      - temporal
+    environment:
+      - TEMPORAL_GRPC_ENDPOINT=temporal:7233
+      - TEMPORAL_PERMIT_WRITE_API=true
+    image: temporalio/web:1.8.1
+    networks:
+      - temporal-network
+    ports:
+      - 8088:8088    
+
+  #########################################################################################
+  # The temporal CLI in a handy container.
+  #########################################################################################  
+  temporal-admin-tools:
+    container_name: temporal-admin-tools
+    depends_on:
+      - temporal
+    environment:
+      - TEMPORAL_CLI_ADDRESS=temporal:7233
+    image: temporalio/admin-tools:1.8.1
+    networks:
+      - temporal-network
+    stdin_open: true
+    tty: true
+  
+  #########################################################################################
+  # Dependencies for Temporal, from temporal's example docker-compose-cas-es.yml
+  #########################################################################################
+  cassandra:
+    container_name: temporal-cassandra
+    image: cassandra:3.11.9
+    networks:
+      - temporal-network
+    ports:
+      - 9042:9042
+  elasticsearch:
+    container_name: temporal-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms100m -Xmx100m
+    image: elasticsearch:7.10.1
+    networks:
+      - temporal-network
+    ports:
+      - 9200:9200
+
+  
+networks:
+  temporal-network:
+    driver: bridge
+    name: temporal-network

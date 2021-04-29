@@ -87,11 +87,11 @@ func Test(ctx context.Context, repo, sha string) (string, error) {
 
 	var dat = struct {
 		Callback string `json:"callback"`
-	}{Callback: "http://localhost:6007/callback/" + token}
+	}{Callback: "http://workflow:6007/callback/" + token}
 	body, _ := json.Marshal(dat)
 
 	// Send the request to the leaf work processor
-	resp, err := http.DefaultClient.Post("http://localhost:6008/", "application/json", bytes.NewReader(body))
+	resp, err := http.DefaultClient.Post("http://leaf:6008/", "application/json", bytes.NewReader(body))
 	if err != nil {
 		return "", err
 	}
@@ -108,7 +108,7 @@ func DiffResults(old, new string) (string, error) {
 	}{Old: old, New: new}
 	body, _ := json.Marshal(dat)
 
-	resp, err := http.DefaultClient.Post("http://localhost:6008/diff", "application/json", bytes.NewReader(body))
+	resp, err := http.DefaultClient.Post("http://leaf:6008/diff", "application/json", bytes.NewReader(body))
 	if err != nil {
 		return "", err
 	}

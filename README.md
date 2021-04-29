@@ -14,18 +14,14 @@ that calls back when work is done.
 
 Temporal handles:
 - queueing and limiting the work after accepting that original `/pr` call
-- checkpointing steps in the workflow (in `workflow.go`) so that in the event of failure, work is not lost.
+- checkpointing steps in the workflow (in `workflow/workflow.go`) so that in the event of failure, work is not lost.
 - retries for any part of originally sending the work to the leaf, or if it does not call back (or heartbeat) before a dealine.
 
 ## Run it
 
-- Run temporal via docker-compose as described here: https://github.com/temporalio/docker-compose#how-to-use
-- Install Go
-- Install Node
-- run `make` in the root of this dir to build the worker/server process.
-- `cd` into `leaf` and run `npm i` to get all them node deps.
-- in one terminal, start the leaf worker in the `leaf` dir: `node index.js`
-- in another terminal, start the worker/server from the root dir: `./worker`
+- Run `docker compose up -d` to start temporal and the local services:
+  - `worker`, the workflow runner and rest API
+  - `leaf`, a leaf capability service
 
 Now you're ready to enqueue work.
 - install [httpie](https://httpie.io/) because it's really good and you deserve nice things. you do. it's ok to indulge once in a while in a nice CLI tool.

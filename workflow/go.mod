@@ -1,4 +1,4 @@
-module github.com/jbowes/temporal-fun
+module github.com/jbowes/fun-with-temporal/workflow
 
 go 1.14
 
