@@ -27,20 +27,6 @@ const sleep = (milliseconds) => {
   return new Promise(resolve => setTimeout(resolve, milliseconds));
 }
 
-let running = 0;
-app.use(async (req, res, next) => {
-  console.log('running is', running);
-  if (running > 0) {
-    res.status(503);
-    return;
-  }
-
-  running++;
-  await sleep(1000);
-  await next()
-  running--;
-})
-
 app.post('/diff', async (req, res) => {
   await sleep(1500 + Math.floor(Math.random() * 500));
   res.status(200);
