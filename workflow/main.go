@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
@@ -10,6 +9,10 @@ import (
 )
 
 func main() {
+
+	r := NewRepository()
+	log.Println(r.redis)
+
 	// Create the client object just once per process
 	c, err := client.NewClient(client.Options{
 		HostPort: "temporal:7233",
@@ -22,13 +25,15 @@ func main() {
 	// run our web server. this isn't clean for startup or shutdown but
 	// that's ok for now.
 	go func() {
-		err := http.ListenAndServe("0.0.0.0:6007", Api(c))
-		fmt.Println(err)
+		err := http.ListenAndServe("0.0.0.0:6007", Api(c, r))
+		log.Fatalln(err)
 	}()
 
 	// This worker hosts both Worker and Activity functions
 	w := worker.New(c, PRCheckTaskQueue, worker.Options{})
-	w.RegisterWorkflow(CheckPR)
+
+	cpr := &CheckPR{r: r}
+	w.RegisterWorkflow(cpr.CheckPR)
 
 	w.RegisterActivity(Test)
 	w.RegisterActivity(DiffResults)

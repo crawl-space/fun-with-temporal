@@ -1,5 +1,9 @@
 services:
 
+  #########################################################################################
+  # The workflow service. It provides the API to start and query the "pr check" workflow,
+  # the API to query status, and the background worker to orchestrate the work.
+  #########################################################################################
   workflow:
     container_name: workflow
     image: fun-with-temporal/workflow
@@ -13,6 +17,20 @@ services:
     ports:
       - 6007:6007
 
+  redis:
+    container_name: redis
+    image: redis:6.2.2
+    command: ["redis-server", "--appendonly", "yes"]
+    networks:
+      - default
+    ports:
+      - 6379:6379
+    volumes:
+      - redis-data:/data
+
+  #########################################################################################
+  # A leaf service that does work.
+  #########################################################################################
   leaf:
     container_name: leaf
     image: fun-with-temporal/leaf
@@ -96,3 +114,6 @@ networks:
   temporal-network:
     driver: bridge
     name: temporal-network
+
+volumes:
+  redis-data:
