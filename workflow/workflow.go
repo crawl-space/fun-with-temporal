@@ -22,31 +22,13 @@ type CheckDetails struct {
 	New  string
 }
 
-type CheckPR struct {
-	r *Repository
-}
-
-func (cpr *CheckPR) CheckPR(ctx workflow.Context, details CheckDetails) error {
+func CheckPR(ctx workflow.Context, details CheckDetails) error {
 	ctx = workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
 		StartToCloseTimeout: time.Minute, // Max 1 minute before quitting
 	})
 
-	ctx = workflow.WithLocalActivityOptions(ctx, workflow.LocalActivityOptions{
-		StartToCloseTimeout: time.Minute, // Max 1 minute before quitting
-	})
-
-	i := workflow.GetInfo(ctx)
-
-	// TODO: put status in error on failure.
-	var status PRStatus
-
 	// Start both tests. We get back futures. They transparently handle
 	// retries and persisting the results.
-	status.Status = append([]PRStatusItem{{State: "testing", TimeStamp: workflow.Now(ctx), Description: "tests are running"}}, status.Status...)
-	if err := workflow.ExecuteLocalActivity(ctx, cpr.r.Put, i.WorkflowExecution.ID, status).Get(ctx, nil); err != nil {
-		return err
-	}
-
 	old := workflow.ExecuteActivity(ctx, Test, details.Repo, details.Old)
 	new := workflow.ExecuteActivity(ctx, Test, details.Repo, details.New)
 
@@ -63,30 +45,13 @@ func (cpr *CheckPR) CheckPR(ctx workflow.Context, details CheckDetails) error {
 
 	// fast to do and deterministic. run inside the workflow.
 	var diff string
-	status.Status = append([]PRStatusItem{{State: "diffing", TimeStamp: workflow.Now(ctx), Description: "test results are diffing"}}, status.Status...)
-	if err := workflow.ExecuteLocalActivity(ctx, cpr.r.Put, i.WorkflowExecution.ID, status).Get(ctx, nil); err != nil {
-		return err
-	}
-
 	err := workflow.ExecuteActivity(ctx, DiffResults, oldRes, newRes).Get(ctx, &diff)
 	if err != nil {
 		return err
 	}
 
 	// Resolve the final task and finish.
-	status.Status = append([]PRStatusItem{{State: "reporting", TimeStamp: workflow.Now(ctx), Description: "PR check results are being posted"}}, status.Status...)
-	if err := workflow.ExecuteLocalActivity(ctx, cpr.r.Put, i.WorkflowExecution.ID, status).Get(ctx, nil); err != nil {
-		return err
-	}
-
 	if err := workflow.ExecuteActivity(ctx, SetCommitStatus, details.Repo, details.PR, diff).Get(ctx, nil); err != nil {
-		return err
-	}
-
-	// XXX: Does setting this final status make sense? how will query interact with the actual workflow completion status?
-	// is there a race condition? probably doesn't matter.
-	status.Status = append([]PRStatusItem{{State: "complete", TimeStamp: workflow.Now(ctx), Description: "All done"}}, status.Status...)
-	if err := workflow.ExecuteLocalActivity(ctx, cpr.r.Put, i.WorkflowExecution.ID, status).Get(ctx, nil); err != nil {
 		return err
 	}
 

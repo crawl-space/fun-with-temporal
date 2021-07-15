@@ -3,16 +3,13 @@ package main
 import (
 	"log"
 	"net/http"
+	"time"
 
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
 )
 
 func main() {
-
-	r := NewRepository()
-	log.Println(r.redis)
-
 	// Create the client object just once per process
 	c, err := client.NewClient(client.Options{
 		HostPort: "temporal:7233",
@@ -25,15 +22,16 @@ func main() {
 	// run our web server. this isn't clean for startup or shutdown but
 	// that's ok for now.
 	go func() {
-		err := http.ListenAndServe("0.0.0.0:6007", Api(c, r))
+		err := http.ListenAndServe("0.0.0.0:6007", Api(c))
 		log.Fatalln(err)
 	}()
+
+	time.Sleep(2 * time.Minute)
 
 	// This worker hosts both Worker and Activity functions
 	w := worker.New(c, PRCheckTaskQueue, worker.Options{})
 
-	cpr := &CheckPR{r: r}
-	w.RegisterWorkflow(cpr.CheckPR)
+	w.RegisterWorkflow(CheckPR)
 
 	w.RegisterActivity(Test)
 	w.RegisterActivity(DiffResults)
