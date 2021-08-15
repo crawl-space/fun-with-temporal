@@ -17,17 +17,6 @@ services:
     ports:
       - 6007:6007
 
-  redis:
-    container_name: redis
-    image: redis:6.2.2
-    command: ["redis-server", "--appendonly", "yes"]
-    networks:
-      - default
-    ports:
-      - 6379:6379
-    volumes:
-      - redis-data:/data
-
   #########################################################################################
   # A leaf service that does work.
   #########################################################################################
